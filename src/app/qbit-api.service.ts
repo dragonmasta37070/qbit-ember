@@ -201,7 +201,9 @@ export class QbitApiService {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({ username, password }),
     });
-    const ok = r.ok && (await r.text()).startsWith('Ok');
+    // qBittorrent 5.x answers a successful login with an empty 204 (a failed one with 401);
+    // 4.x sends 200 with "Ok." or "Fails." in the body.
+    const ok = r.status === 204 || (r.ok && (await r.text()).startsWith('Ok'));
     if (ok) {
       this.rid = 0;
       this.auth.set('ok');
