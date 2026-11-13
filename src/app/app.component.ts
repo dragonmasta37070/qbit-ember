@@ -1,7 +1,7 @@
 import { Component, computed, effect, inject, signal } from '@angular/core';
 import { QbitApiService, STATE_COLOR, STATE_LABEL, Torrent, TorrentFile, Tracker, UiState } from './qbit-api.service';
 import { fmtBytes, fmtDate, fmtEta, fmtIsoDate, fmtRatio, fmtSpeed, techLine } from './format';
-import { CleanuparrService } from './cleanuparr.service';
+import { CleanuparrService, describeCleanuparr } from './cleanuparr.service';
 import { buildAttention } from './attention';
 
 type Filter = 'attention' | 'active' | 'all' | 'down' | 'done' | 'paused' | 'seeding' | 'completed' | 'stalled' | 'error';
@@ -229,9 +229,7 @@ export class AppComponent {
       freeSpace: this.api.server().freeSpace,
       cleanuparr: this.cleanuparr.configured()
         ? {
-            configured: true,
-            unauthorized: this.cleanuparr.status() === 'unauthorized',
-            reachable: this.cleanuparr.reachable(),
+            status: this.cleanuparr.status(),
             failedJobs: cp?.failedJobs ?? 0,
             itemsRemoved: cp?.itemsRemoved ?? 0,
           }
@@ -239,22 +237,8 @@ export class AppComponent {
     });
   });
 
-  readonly cleanuparrLabel = computed(() => {
-    switch (this.cleanuparr.status()) {
-      case 'ok':
-        return { text: 'Connected', sub: 'Stats and strikes available', tone: 'ok' };
-      case 'unauthorized':
-        return { text: 'Key rejected', sub: 'Check CLEANUPARR_API_KEY', tone: 'bad' };
-      case 'unreachable':
-        // Never having reached it is not a fault — the integration is optional.
-        // Losing one that used to work is.
-        return this.cleanuparr.configured()
-          ? { text: 'Not reachable', sub: 'Check CLEANUPARR_URL and the container', tone: 'warn' }
-          : { text: 'Not connected', sub: 'Optional — set CLEANUPARR_URL to enable', tone: 'idle' };
-      default:
-        return { text: 'Checking …', sub: '', tone: 'idle' };
-    }
-  });
+  readonly cleanuparrLabel = computed(() =>
+    describeCleanuparr(this.cleanuparr.status(), this.cleanuparr.httpStatus(), this.cleanuparr.configured()));
 
   // Cleanuparr context for the torrent on the detail screen, if it knows it
   readonly detailCleanuparr = computed(() => {

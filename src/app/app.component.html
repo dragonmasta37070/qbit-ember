@@ -625,16 +625,11 @@
       } @else if (cleanuparr.status() !== 'unknown') {
         <div class="info-card">
           <div class="empty">
-            <div class="empty-title">No data</div>
-            <div class="empty-sub">
-              @if (cleanuparr.status() === 'unauthorized') {
-                Cleanuparr answered but rejected the key. Copy it again from Cleanuparr →
-                account settings into CLEANUPARR_API_KEY.
-              } @else {
-                Set CLEANUPARR_URL to your Cleanuparr container, for example
-                http://cleanuparr:11011.
-              }
-            </div>
+            <div class="empty-title">{{ cleanuparrLabel().text }}</div>
+            <div class="empty-sub">{{ cleanuparrLabel().sub }}</div>
+            @if (cleanuparr.status() === 'unsupported') {
+              <div class="empty-sub">Needs a Cleanuparr with the v2 stats API.</div>
+            }
           </div>
         </div>
       }

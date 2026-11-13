@@ -1,4 +1,5 @@
 import { fmtBytes } from './format';
+import { CleanuparrStatus } from './cleanuparr.service';
 
 // One line above the list that answers "does anything need me?".
 // It is absent when the answer is no — a banner that is always there and
@@ -19,10 +20,10 @@ export interface AttentionInput {
   /** downloading or fetching metadata, but nothing has moved for a while */
   stuck: number;
   freeSpace: number;
+  /** null when Cleanuparr has never answered — it is optional, so its absence
+   *  is never reported. */
   cleanuparr: {
-    configured: boolean;
-    unauthorized: boolean;
-    reachable: boolean;
+    status: CleanuparrStatus;
     failedJobs: number;
     itemsRemoved: number;
   } | null;
@@ -50,11 +51,13 @@ export function buildAttention(input: AttentionInput): Attention {
 
   if (freeSpace > 0 && freeSpace < LOW_DISK) systemParts.push(`only ${fmtBytes(freeSpace)} free`);
 
-  if (cleanuparr?.unauthorized) {
+  if (cleanuparr?.status === 'unauthorized') {
     systemParts.push('Cleanuparr key rejected');
-  } else if (cleanuparr?.configured && !cleanuparr.reachable) {
+  } else if (cleanuparr?.status === 'unsupported') {
+    systemParts.push('Cleanuparr version unsupported');
+  } else if (cleanuparr?.status === 'unreachable') {
     systemParts.push('Cleanuparr unreachable');
-  } else if (cleanuparr?.reachable && cleanuparr.failedJobs > 0) {
+  } else if (cleanuparr?.status === 'ok' && cleanuparr.failedJobs > 0) {
     systemParts.push(`${plural(cleanuparr.failedJobs, 'Cleanuparr job')} failed`);
   }
 
@@ -67,7 +70,7 @@ export function buildAttention(input: AttentionInput): Attention {
     };
   }
 
-  if (cleanuparr?.reachable && cleanuparr.itemsRemoved > 0) {
+  if (cleanuparr?.status === 'ok' && cleanuparr.itemsRemoved > 0) {
     return {
       level: 'info',
       text: `Cleanuparr removed ${plural(cleanuparr.itemsRemoved, 'download')}`,

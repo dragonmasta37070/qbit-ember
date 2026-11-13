@@ -86,19 +86,30 @@ createServer(async (req, res) => {
     ] });
   }
 
-  if (p === '/cleanuparr/api/stats') {
+  // Mirrors current Cleanuparr: v1 /api/stats is gone, v2 is the live one.
+  if (p === '/cleanuparr/api/stats') { res.writeHead(404); return res.end('not found'); }
+
+  if (p === '/cleanuparr/api/v2/stats') {
     if (!process.env['CLEANUPARR']) { res.writeHead(502); return res.end('no cleanuparr'); }
     if (process.env['CLEANUPARR'] === 'badkey') { res.writeHead(401); return res.end('unauthorized'); }
+    if (process.env['CLEANUPARR'] === 'old') { res.writeHead(404); return res.end('not found'); }
     return json({
-      events: { totalCount: 41 },
-      strikes: { totalCount: 12, itemsRemoved: 3 },
-      jobs: { byType: {
-        QueueCleaner: { totalRuns: 288, failed: 0 },
-        MalwareBlocker: { totalRuns: 288, failed: 0 },
-        Seeker: { totalRuns: 24, failed: 0 },
+      events: { total: 41, byType: {}, bySeverity: {} },
+      strikes: { total: 12, byType: {}, recovered: 2 },
+      removals: { total: 3, byReason: { Stalled: 2, FailedImport: 1 } },
+      cleaned: { total: 1, byReason: {} },
+      searches: { total: 4, completed: 4, failed: 0, grabbed: 2, byReason: {} },
+      jobs: { total: 600, completed: 600, failed: 0, byType: {
+        QueueCleaner: { total: 288, completed: 288, failed: 0 },
+        MalwareBlocker: { total: 288, completed: 288, failed: 0 },
+        Seeker: { total: 24, completed: 24, failed: 0 },
       } },
+      health: { downloadClients: [], arrInstances: [] },
+      timeframeHours: 24,
+      generatedAt: new Date().toISOString(),
     });
   }
+
   if (p.startsWith('/api/')) return text('Ok.');
 
   // static from dist/, else index.html (SPA fallback)

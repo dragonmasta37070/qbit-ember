@@ -108,9 +108,13 @@ directly:
 | Card says | Meaning | Fix |
 |---|---|---|
 | **Connected** (green) | Key and URL are good | — |
-| **Key rejected** (red) | Cleanuparr answered but refused the key | Copy the key again from Account settings into `CLEANUPARR_API_KEY` |
-| **Not reachable** (amber) | It worked before and is gone now | Check the Cleanuparr container and `CLEANUPARR_URL` |
-| **Not connected** (grey) | Never reached it | Check `CLEANUPARR_URL`; grey because not running Cleanuparr is a valid choice, not a fault |
+| **API key rejected** (red, HTTP 401/403) | Cleanuparr answered but refused the key | Copy the key again from Account settings into `CLEANUPARR_API_KEY` |
+| **Unsupported Cleanuparr version** (red, HTTP 404) | Reached Cleanuparr, but this build has no `/api/v2/stats` | Update Cleanuparr |
+| **Not reachable** (amber, HTTP 502) | It answered before and is gone now | Check the Cleanuparr container and `CLEANUPARR_URL` |
+| **Not connected** (grey) | Never answered at all | Check `CLEANUPARR_URL`; grey because not running Cleanuparr is a valid choice, not a fault |
+
+Each failure names the HTTP code it got, so a wrong key, an old version and an unreachable host
+are never reported as the same problem.
 
 Tapping the card opens a Cleanuparr screen with removed items, strikes and events for the last
 24 hours plus a per-job breakdown.
@@ -125,6 +129,16 @@ Tapping the card opens a Cleanuparr screen with removed items, strikes and event
 
 The key never reaches the browser: nginx injects the `X-Api-Key` header inside the container, and
 the frontend only ever calls `/cleanuparr/...` on its own origin.
+
+### Endpoints used
+
+| Purpose | Endpoint |
+|---|---|
+| Aggregated stats | `GET /api/v2/stats?hours=24` |
+| Per-torrent context | `GET /api/events?pageSize=200` |
+
+Cleanuparr removed the v1 `/api/stats` endpoint; anything still calling it gets a 404. The counts
+come from `events.total`, `strikes.total`, `removals.total` and `jobs.byType.*`.
 
 ### Limitations
 
