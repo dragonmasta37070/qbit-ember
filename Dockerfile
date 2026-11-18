@@ -1,5 +1,8 @@
-# Build stage
-FROM node:22-alpine AS build
+# Build stage. Pinned to the BUILD platform, not the target one: the Angular
+# output is static files and architecture-independent, so there is nothing to
+# gain from emulating arm64 here. Without this the arm64 leg runs npm ci and
+# ng build under QEMU and takes hours instead of minutes.
+FROM --platform=$BUILDPLATFORM node:22-alpine AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
